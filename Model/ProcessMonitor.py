@@ -21,19 +21,48 @@ class ProcessMonitor(threading.Thread):
 
     def run(self):
         while True:
-            if(platform.system()=='Windows'):
-                window()
-            else:
-                linux()
-            s3 = boto3.resource('s3')
-            bucket = s3.Bucket('')
-            obj = bucket.Object(self.key )
-
+            running_process = []
+            for proc in psutil.process_iter(attrs=['pid', 'name']):
+                if proc.info['name'] in self.black_list_process:
+                    print("killed ", proc.info)
+                    proc.kill()
+                    ps = ProcessEvent(proc, datetime.datetime.now(), True)
+                else:
+                    ps = ProcessEvent(proc, datetime.datetime.now(), False)
+                running_process.append(ps.event)
             try:
-                with open('filename', 'rb') as data:
-                    obj.upload_fileobj(data)
+                if (platform.system() == 'Windows'):
+                    screen=window()
+                else:
+                    screen =linux()
+                # Get the service client
+                s3 = boto3.client('s3')
+
+                # Make sure everything posted is publicly readable
+                fields = {"acl": "public-read"}
+
+                # Ensure that the ACL isn't changed and restrict the user to a length
+                # between 10 and 100.
+                conditions = [
+                    {"acl": "public-read"},
+                    ["content-length-range", 10, 100]
+                ]
+
+                # Generate the POST attributes
+                post = s3.generate_presigned_post(
+                    Bucket='bucket-name',
+                    Key=self.key,
+                    Fields=fields,
+                    Conditions=conditions
+                )
+
+                files = {"file": screen}
+                response = requests.post(post["url"], data=post["fields"], files=files)
+                if response.ok:
+                    self.black_list_process = list(map(lambda x: x.strip(), response.json().split(",")))
+                else:
+                    print(response.status_code)
+                    print(response.reason)
             except Exception as e:
                 print(e)
-
             sleep(5)
-
