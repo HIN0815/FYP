@@ -3,7 +3,7 @@ import json
 import threading
 from time import sleep
 
-# import psutil
+import psutil
 import requests
 from Model.Screenshot import *
 import boto3
