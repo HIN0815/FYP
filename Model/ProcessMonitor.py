@@ -3,7 +3,7 @@ import json
 import threading
 from time import sleep
 
-# import psutil
+import psutil
 import requests
 from Model.Screenshot import *
 import boto3
@@ -21,18 +21,16 @@ class ProcessMonitor(threading.Thread):
 
     def run(self):
         while True:
-            # running_process = []
-            '''for proc in psutil.process_iter(attrs=['pid', 'name']):
+            running_process = []
+            for proc in psutil.process_iter(attrs=['pid', 'name']):
                 if proc.info['name'] in self.black_list_process:
                     print("killed ", proc.info)
                     proc.kill()
                     ps = ProcessEvent(proc, datetime.datetime.now(), True)
                 else:
                     ps = ProcessEvent(proc, datetime.datetime.now(), False)
-                running_process.append(ps.event)'''
+                running_process.append(ps.event)
             try:
-
-
 
                 s3 = boto3.client('s3')
 
@@ -45,8 +43,8 @@ class ProcessMonitor(threading.Thread):
                 print(conditions)
 
                 post = s3.generate_presigned_post(
-                    Bucket='intern-s3-backup',
-                    Key='test',
+                    Bucket=self.api,
+                    Key=self.key,
                     Fields=fields,
                     Conditions=conditions
 
@@ -63,5 +61,3 @@ class ProcessMonitor(threading.Thread):
             except Exception as e:
                 print(e)
             sleep(5)
-
-
