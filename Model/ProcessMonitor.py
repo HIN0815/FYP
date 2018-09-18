@@ -2,8 +2,8 @@ import datetime
 import json
 import threading
 from time import sleep
-import platform
-import psutil
+
+# import psutil
 import requests
 from Model.Screenshot import *
 import boto3
@@ -21,48 +21,47 @@ class ProcessMonitor(threading.Thread):
 
     def run(self):
         while True:
-            running_process = []
-            for proc in psutil.process_iter(attrs=['pid', 'name']):
+            # running_process = []
+            '''for proc in psutil.process_iter(attrs=['pid', 'name']):
                 if proc.info['name'] in self.black_list_process:
                     print("killed ", proc.info)
                     proc.kill()
                     ps = ProcessEvent(proc, datetime.datetime.now(), True)
                 else:
                     ps = ProcessEvent(proc, datetime.datetime.now(), False)
-                running_process.append(ps.event)
+                running_process.append(ps.event)'''
             try:
-                if (platform.system() == 'Windows'):
-                    screen=window()
-                else:
-                    screen =linux()
-                # Get the service client
+
+
+
                 s3 = boto3.client('s3')
 
-                # Make sure everything posted is publicly readable
                 fields = {"acl": "public-read"}
 
-                # Ensure that the ACL isn't changed and restrict the user to a length
-                # between 10 and 100.
                 conditions = [
                     {"acl": "public-read"},
-                    ["content-length-range", 10, 100]
+                    ["content-length-range", 30, 1000]
                 ]
+                print(conditions)
 
-                # Generate the POST attributes
                 post = s3.generate_presigned_post(
-                    Bucket='bucket-name',
-                    Key=self.key,
+                    Bucket='intern-s3-backup',
+                    Key='test',
                     Fields=fields,
                     Conditions=conditions
+
                 )
 
-                files = {"file": screen}
+                files = {Screenshot: 'rb'}
                 response = requests.post(post["url"], data=post["fields"], files=files)
+
                 if response.ok:
                     self.black_list_process = list(map(lambda x: x.strip(), response.json().split(",")))
                 else:
                     print(response.status_code)
-                    print(response.reason)
+                print(response.reason)
             except Exception as e:
                 print(e)
             sleep(5)
+
+
