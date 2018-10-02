@@ -23,19 +23,16 @@ class ProcessMonitor(threading.Thread):
         while True:
 
             try:
-
-                s3 = boto3.client('s3')
-                photo = Screenshot+'.png'
-                s3.put_object(
-                    Bucket=self.api,
-                    Key=photo,
-                    ContentType='image/png'
-                )
-                url = s3.generate_presigned_url('get_object', Params={'Bucket': self.api, 'Key': photo})
-                response = requests.get(url)
+                response = requests.post("https://" + self.api + "/event", data=data,
+                                             headers={"x-api-key": self.key})
+                    if response.ok:
+                        print(response.json())
+                    else:
+                        print(response.status_code)
+                        print(response.reason)
 
             except Exception as e:
                 print(e)
             sleep(5)
 
-    run('a')
+    
