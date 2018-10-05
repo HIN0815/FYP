@@ -6,7 +6,6 @@ from time import sleep
 import psutil
 import requests
 from Model.Screenshot import *
-import boto3
 from Model.Event import ProcessEvent
 
 
@@ -23,13 +22,24 @@ class ProcessMonitor(threading.Thread):
         while True:
 
             try:
-                response = requests.post("https://" + self.api + "/event", data=data,
-                                             headers={"x-api-key": self.key})
-                    if response.ok:
-                        print(response.json())
-                    else:
-                        print(response.status_code)
-                        print(response.reason)
+
+                response = requests.post("https"+self.api+"/process",
+                                         headers={ "x-api-key": self.key})
+
+                files = {
+                    'file': ('D:\\Screenshot.png',
+                             open('D:\\Screenshot.png', 'rb'), 'image/png', {'Expires': '0'})}
+                if response.ok:
+                    print(response.json())
+                    upload = response.json()
+
+                    r = requests.post(upload, files=files)
+                    print(r.text)
+
+                else:
+                    print(response.status_code)
+                    print(response.reason)
+
 
             except Exception as e:
                 print(e)
